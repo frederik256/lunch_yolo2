@@ -6,7 +6,7 @@ public class StockIndexService(HttpClient http) : IStockIndexService
 {
     public async Task<StockIndexData> GetWeeklyAsync(string ticker)
     {
-        var url = $"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1d&range=5d";
+        var url = $"https://query1.finance.yahoo.com/v8/finance/chart/{Uri.EscapeDataString(ticker)}?interval=1d&range=5d";
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Add("User-Agent", "Mozilla/5.0");
         var response = await http.SendAsync(request);

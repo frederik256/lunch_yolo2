@@ -6,7 +6,7 @@ public class WeatherService(HttpClient http) : IWeatherService
 {
     public async Task<WeatherData> GetCurrentAsync(double lat, double lon, string timezone)
     {
-        var url = $"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,weathercode&timezone={timezone}";
+        var url = $"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,weathercode&timezone={Uri.EscapeDataString(timezone)}";
         var json = await http.GetStringAsync(url);
         using var doc = JsonDocument.Parse(json);
         var current = doc.RootElement.GetProperty("current");
