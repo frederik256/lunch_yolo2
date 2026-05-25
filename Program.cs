@@ -2,10 +2,8 @@ using LunchYolo2.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddHttpClient<WeatherService>();
-builder.Services.AddHttpClient<StockIndexService>();
-builder.Services.AddScoped<IWeatherService, WeatherService>();
-builder.Services.AddScoped<IStockIndexService, StockIndexService>();
+builder.Services.AddHttpClient<IWeatherService, WeatherService>();
+builder.Services.AddHttpClient<IStockIndexService, StockIndexService>();
 
 var app = builder.Build();
 
