@@ -172,6 +172,7 @@
 
       offices.forEach((o, i) => {
         const closes = o.index.closes;
+        if (closes.length === 0) return;
         const last = closes[closes.length - 1];
         const first = closes[0];
         const pct = ((last - first) / first * 100).toFixed(2);
@@ -200,7 +201,7 @@
       });
     }
 
-    loadOffices();
+    loadOffices().catch(err => console.error('Failed to load offices', err));
   </script>
 </body>
 </html>
