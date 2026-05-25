@@ -10,6 +10,7 @@ public class StockIndexService(HttpClient http) : IStockIndexService
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Add("User-Agent", "Mozilla/5.0");
         var response = await http.SendAsync(request);
+        response.EnsureSuccessStatusCode();
         var json = await response.Content.ReadAsStringAsync();
 
         using var doc = JsonDocument.Parse(json);
