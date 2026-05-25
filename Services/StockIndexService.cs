@@ -16,18 +16,21 @@ public class StockIndexService(HttpClient http) : IStockIndexService
         var result = doc.RootElement
             .GetProperty("chart").GetProperty("result")[0];
 
-        var timestamps = result.GetProperty("timestamp").EnumerateArray()
+        var rawTimestamps = result.GetProperty("timestamp").EnumerateArray()
             .Select(t => DateTimeOffset.FromUnixTimeSeconds(t.GetInt64()).UtcDateTime)
             .ToArray();
 
-        var closes = result.GetProperty("indicators")
+        var rawCloses = result.GetProperty("indicators")
             .GetProperty("quote")[0]
             .GetProperty("close").EnumerateArray()
-            .Where(c => c.ValueKind != JsonValueKind.Null)
-            .Select(c => Math.Round(c.GetDouble(), 2))
             .ToArray();
 
-        var dates = timestamps.Select(DateOnly.FromDateTime).ToArray();
+        var pairs = rawTimestamps.Zip(rawCloses)
+            .Where(p => p.Second.ValueKind != JsonValueKind.Null)
+            .ToArray();
+
+        var dates = pairs.Select(p => DateOnly.FromDateTime(p.First)).ToArray();
+        var closes = pairs.Select(p => Math.Round(p.Second.GetDouble(), 2)).ToArray();
 
         var dateRange = dates.Length > 0
             ? $"{dates[0]:d MMM} – {dates[^1]:d MMM}"
