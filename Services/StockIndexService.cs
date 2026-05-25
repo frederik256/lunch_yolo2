@@ -2,14 +2,12 @@ using System.Text.Json;
 
 namespace LunchYolo2.Services;
 
-public class FtseService(HttpClient http) : IFtseService
+public class StockIndexService(HttpClient http) : IStockIndexService
 {
-    private const string Url =
-        "https://query1.finance.yahoo.com/v8/finance/chart/%5EFTSE?interval=1d&range=5d";
-
-    public async Task<FtseData> GetWeeklyAsync()
+    public async Task<StockIndexData> GetWeeklyAsync(string ticker)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Get, Url);
+        var url = $"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1d&range=5d";
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Add("User-Agent", "Mozilla/5.0");
         var response = await http.SendAsync(request);
         var json = await response.Content.ReadAsStringAsync();
@@ -25,6 +23,7 @@ public class FtseService(HttpClient http) : IFtseService
         var closes = result.GetProperty("indicators")
             .GetProperty("quote")[0]
             .GetProperty("close").EnumerateArray()
+            .Where(c => c.ValueKind != JsonValueKind.Null)
             .Select(c => Math.Round(c.GetDouble(), 2))
             .ToArray();
 
@@ -34,6 +33,6 @@ public class FtseService(HttpClient http) : IFtseService
             ? $"{dates[0]:d MMM} – {dates[^1]:d MMM}"
             : string.Empty;
 
-        return new FtseData(dates, closes, dateRange);
+        return new StockIndexData(dates, closes, dateRange);
     }
 }

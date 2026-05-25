@@ -4,12 +4,10 @@ namespace LunchYolo2.Services;
 
 public class WeatherService(HttpClient http) : IWeatherService
 {
-    private static readonly string Url =
-        "https://api.open-meteo.com/v1/forecast?latitude=51.5074&longitude=-0.1278&current=temperature_2m,weathercode&timezone=Europe/London";
-
-    public async Task<WeatherData> GetCurrentAsync()
+    public async Task<WeatherData> GetCurrentAsync(double lat, double lon, string timezone)
     {
-        var json = await http.GetStringAsync(Url);
+        var url = $"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,weathercode&timezone={timezone}";
+        var json = await http.GetStringAsync(url);
         using var doc = JsonDocument.Parse(json);
         var current = doc.RootElement.GetProperty("current");
         var temp = current.GetProperty("temperature_2m").GetDouble();

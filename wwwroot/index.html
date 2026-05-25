@@ -65,9 +65,9 @@
       z-index: 2;
       padding: 80px 40px 0;
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 40px;
-      max-width: 900px;
+      max-width: 1100px;
     }
 
     .widget-label {
@@ -77,6 +77,15 @@
       text-transform: uppercase;
       color: rgba(255,255,255,0.4);
       margin-bottom: 16px;
+    }
+    .index-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.25);
+      margin-bottom: 10px;
+      margin-top: 20px;
     }
 
     /* Weather */
@@ -94,7 +103,7 @@
       margin-top: 6px;
     }
 
-    /* FTSE */
+    /* Index */
     .ftse-top {
       display: flex;
       align-items: baseline;
@@ -139,54 +148,12 @@
     <div class="hero-bg"></div>
     <div class="hero-overlay"></div>
     <div class="hero-content">
-      <div class="data-bar">
-    <div id="weather-widget">
-      <div class="widget-label">London Weather</div>
-      <div class="weather-temp" id="weather-temp">—</div>
-      <div class="weather-condition" id="weather-condition">Loading…</div>
-    </div>
-
-    <div id="ftse-widget">
-      <div class="widget-label">FTSE 100</div>
-      <div class="ftse-top">
-        <span class="ftse-price" id="ftse-price">—</span>
-        <span class="ftse-change" id="ftse-change"></span>
-      </div>
-      <svg class="ftse-chart" id="ftse-chart" viewBox="0 0 320 60" preserveAspectRatio="none">
-        <polyline id="ftse-line" fill="none" stroke="#4a9eff" stroke-width="1.5"
-          stroke-linejoin="round" stroke-linecap="round" points="" />
-      </svg>
-      <div class="ftse-range" id="ftse-range"></div>
-    </div>
-      </div>
+      <div class="data-bar" id="offices-grid"></div>
     </div>
   </section>
 
   <script>
-    async function loadWidgets() {
-      const [weatherRes, ftseRes] = await Promise.all([
-        fetch('/api/weather'),
-        fetch('/api/ftse')
-      ]);
-
-      const weather = await weatherRes.json();
-      document.getElementById('weather-temp').textContent = weather.temp.toFixed(1) + '°C';
-      document.getElementById('weather-condition').textContent = weather.condition;
-
-      const ftse = await ftseRes.json();
-      const closes = ftse.closes;
-      const last = closes[closes.length - 1];
-      const first = closes[0];
-      const pct = ((last - first) / first * 100).toFixed(2);
-      const sign = pct >= 0 ? '+' : '';
-
-      document.getElementById('ftse-price').textContent = last.toLocaleString('en-GB', { minimumFractionDigits: 2 });
-      const changeEl = document.getElementById('ftse-change');
-      changeEl.textContent = sign + pct + '%';
-      changeEl.className = 'ftse-change ' + (pct >= 0 ? 'positive' : 'negative');
-      document.getElementById('ftse-range').textContent = ftse.dateRange;
-
-      // Draw sparkline
+    function drawSparkline(lineId, closes) {
       const min = Math.min(...closes);
       const max = Math.max(...closes);
       const w = 320, h = 60, pad = 4;
@@ -195,10 +162,45 @@
         const y = h - pad - ((v - min) / (max - min || 1)) * (h - pad * 2);
         return `${x},${y}`;
       }).join(' ');
-      document.getElementById('ftse-line').setAttribute('points', points);
+      document.getElementById(lineId).setAttribute('points', points);
     }
 
-    loadWidgets();
+    async function loadOffices() {
+      const res = await fetch('/api/offices');
+      const offices = await res.json();
+      const grid = document.getElementById('offices-grid');
+
+      offices.forEach((o, i) => {
+        const closes = o.index.closes;
+        const last = closes[closes.length - 1];
+        const first = closes[0];
+        const pct = ((last - first) / first * 100).toFixed(2);
+        const sign = pct >= 0 ? '+' : '';
+        const changeClass = pct >= 0 ? 'positive' : 'negative';
+        const lineId = `sparkline-${i}`;
+
+        const card = document.createElement('div');
+        card.innerHTML = `
+          <div class="widget-label">${o.name}</div>
+          <div class="weather-temp">${o.weather.temp.toFixed(1)}°C</div>
+          <div class="weather-condition">${o.weather.condition}</div>
+          <div class="index-label">${o.index.name}</div>
+          <div class="ftse-top">
+            <span class="ftse-price">${last.toLocaleString('en-GB', { minimumFractionDigits: 2 })}</span>
+            <span class="ftse-change ${changeClass}">${sign}${pct}%</span>
+          </div>
+          <svg class="ftse-chart" viewBox="0 0 320 60" preserveAspectRatio="none">
+            <polyline id="${lineId}" fill="none" stroke="#4a9eff" stroke-width="1.5"
+              stroke-linejoin="round" stroke-linecap="round" points="" />
+          </svg>
+          <div class="ftse-range">${o.index.dateRange}</div>
+        `;
+        grid.appendChild(card);
+        drawSparkline(lineId, closes);
+      });
+    }
+
+    loadOffices();
   </script>
 </body>
 </html>
