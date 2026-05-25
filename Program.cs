@@ -46,3 +46,5 @@ app.MapGet("/api/offices", async (IWeatherService weatherSvc, IStockIndexService
 app.Run();
 
 record OfficeConfig(string Name, double Lat, double Lon, string Timezone, string IndexTicker, string IndexName);
+
+public partial class Program { }

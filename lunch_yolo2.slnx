@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="lunch_yolo2.csproj" />
+  <Project Path="lunch_yolo2.Tests/lunch_yolo2.Tests.csproj" />
+</Solution>

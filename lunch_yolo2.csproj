@@ -6,4 +6,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="lunch_yolo2.Tests/**" />
+    <Content Remove="lunch_yolo2.Tests/**" />
+    <EmbeddedResource Remove="lunch_yolo2.Tests/**" />
+    <None Remove="lunch_yolo2.Tests/**" />
+  </ItemGroup>
+
 </Project>
