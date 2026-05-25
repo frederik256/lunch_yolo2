@@ -56,64 +56,78 @@
     .hero-content {
       position: relative;
       z-index: 2;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
       height: 100%;
-      text-align: center;
-      padding: 0 24px;
       padding-top: 72px;
     }
-    .hero-eyebrow {
-      font-size: 11px;
-      font-weight: 500;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: rgba(255,255,255,0.75);
-      margin-bottom: 18px;
-    }
-    .hero-title {
-      font-size: clamp(32px, 5vw, 58px);
-      font-weight: 700;
-      line-height: 1.15;
-      letter-spacing: -0.01em;
-      max-width: 680px;
-      margin-bottom: 24px;
-    }
-    .hero-body {
-      font-size: 14px;
-      font-weight: 400;
-      line-height: 1.7;
-      color: rgba(255,255,255,0.8);
-      max-width: 480px;
-    }
 
-    /* Stats */
-    .stats {
+    /* Data bar */
+    .data-bar {
       background: #06060a;
-      padding: 64px 40px;
-    }
-    .stats-grid {
+      border-top: 1px solid rgba(255,255,255,0.07);
+      padding: 48px 40px;
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 48px 80px;
-      max-width: 560px;
+      gap: 40px;
+      max-width: 900px;
     }
-    .stat-value {
-      font-size: 36px;
+
+    .widget-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 16px;
+    }
+
+    /* Weather */
+    .weather-temp {
+      font-size: 48px;
+      font-weight: 300;
+      color: #4a9eff;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+    .weather-condition {
+      font-size: 13px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.55);
+      margin-top: 6px;
+    }
+
+    /* FTSE */
+    .ftse-top {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .ftse-price {
+      font-size: 32px;
       font-weight: 300;
       color: #4a9eff;
       letter-spacing: -0.02em;
       line-height: 1;
-      margin-bottom: 6px;
     }
-    .stat-label {
-      font-size: 11px;
+    .ftse-change {
+      font-size: 13px;
       font-weight: 500;
-      letter-spacing: 0.12em;
+    }
+    .ftse-change.positive { color: #34d399; }
+    .ftse-change.negative { color: #f87171; }
+    .ftse-range {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: rgba(255,255,255,0.55);
+      color: rgba(255,255,255,0.3);
+      margin-top: 10px;
+    }
+    .ftse-chart {
+      display: block;
+      width: 100%;
+      max-width: 320px;
+      height: 60px;
     }
   </style>
 </head>
@@ -125,9 +139,67 @@
   <section class="hero">
     <div class="hero-bg"></div>
     <div class="hero-overlay"></div>
-    <div class="hero-content">
+    <div class="hero-content"></div>
+  </section>
+
+  <section class="data-bar">
+    <div id="weather-widget">
+      <div class="widget-label">London Weather</div>
+      <div class="weather-temp" id="weather-temp">—</div>
+      <div class="weather-condition" id="weather-condition">Loading…</div>
+    </div>
+
+    <div id="ftse-widget">
+      <div class="widget-label">FTSE 100</div>
+      <div class="ftse-top">
+        <span class="ftse-price" id="ftse-price">—</span>
+        <span class="ftse-change" id="ftse-change"></span>
+      </div>
+      <svg class="ftse-chart" id="ftse-chart" viewBox="0 0 320 60" preserveAspectRatio="none">
+        <polyline id="ftse-line" fill="none" stroke="#4a9eff" stroke-width="1.5"
+          stroke-linejoin="round" stroke-linecap="round" points="" />
+      </svg>
+      <div class="ftse-range" id="ftse-range"></div>
     </div>
   </section>
 
+  <script>
+    async function loadWidgets() {
+      const [weatherRes, ftseRes] = await Promise.all([
+        fetch('/api/weather'),
+        fetch('/api/ftse')
+      ]);
+
+      const weather = await weatherRes.json();
+      document.getElementById('weather-temp').textContent = weather.temp.toFixed(1) + '°C';
+      document.getElementById('weather-condition').textContent = weather.condition;
+
+      const ftse = await ftseRes.json();
+      const closes = ftse.closes;
+      const last = closes[closes.length - 1];
+      const first = closes[0];
+      const pct = ((last - first) / first * 100).toFixed(2);
+      const sign = pct >= 0 ? '+' : '';
+
+      document.getElementById('ftse-price').textContent = last.toLocaleString('en-GB', { minimumFractionDigits: 2 });
+      const changeEl = document.getElementById('ftse-change');
+      changeEl.textContent = sign + pct + '%';
+      changeEl.className = 'ftse-change ' + (pct >= 0 ? 'positive' : 'negative');
+      document.getElementById('ftse-range').textContent = ftse.dateRange;
+
+      // Draw sparkline
+      const min = Math.min(...closes);
+      const max = Math.max(...closes);
+      const w = 320, h = 60, pad = 4;
+      const points = closes.map((v, i) => {
+        const x = closes.length === 1 ? w / 2 : (i / (closes.length - 1)) * (w - pad * 2) + pad;
+        const y = h - pad - ((v - min) / (max - min || 1)) * (h - pad * 2);
+        return `${x},${y}`;
+      }).join(' ');
+      document.getElementById('ftse-line').setAttribute('points', points);
+    }
+
+    loadWidgets();
+  </script>
 </body>
 </html>
